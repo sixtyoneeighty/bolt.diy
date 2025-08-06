@@ -426,7 +426,7 @@ export const ModelSelector = ({
                       'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-all',
                       'hover:bg-bolt-elements-background-depth-3',
                       showFreeModelsOnly
-                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                        ? 'bg-red-500/20 text-red-400 border border-red-500/30'
                         : 'bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary border border-bolt-elements-borderColor',
                     )}
                   >
@@ -516,7 +516,7 @@ export const ModelSelector = ({
                     <div className="flex items-center justify-between">
                       <span>{modelOption.label}</span>
                       {isModelLikelyFree(modelOption, provider?.name) && (
-                        <span className="i-ph:gift text-xs text-purple-400 ml-2" title="Free model" />
+                        <span className="i-ph:gift text-xs text-red-400 ml-2" title="Free model" />
                       )}
                     </div>
                   </div>

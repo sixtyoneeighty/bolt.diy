@@ -5,6 +5,7 @@ import { renderToReadableStream } from 'react-dom/server';
 import { renderHeadToString } from 'remix-island';
 import { Head } from './root';
 import { themeStore } from '~/lib/stores/theme';
+import { ClerkApp } from '~/lib/auth/ClerkProvider';
 
 export default async function handleRequest(
   request: Request,
@@ -15,13 +16,18 @@ export default async function handleRequest(
 ) {
   // await initializeModelList({});
 
-  const readable = await renderToReadableStream(<RemixServer context={remixContext} url={request.url} />, {
-    signal: request.signal,
-    onError(error: unknown) {
-      console.error(error);
-      responseStatusCode = 500;
+  const readable = await renderToReadableStream(
+    <ClerkApp>
+      <RemixServer context={remixContext} url={request.url} />
+    </ClerkApp>,
+    {
+      signal: request.signal,
+      onError(error: unknown) {
+        console.error(error);
+        responseStatusCode = 500;
+      },
     },
-  });
+  );
 
   const body = new ReadableStream({
     start(controller) {

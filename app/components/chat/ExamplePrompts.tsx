@@ -1,12 +1,18 @@
 import React from 'react';
 
 const EXAMPLE_PROMPTS = [
-  { text: 'Create a mobile app about bolt.diy' },
-  { text: 'Build a todo app in React using Tailwind' },
-  { text: 'Build a simple blog using Astro' },
-  { text: 'Create a cookie consent form using Material UI' },
-  { text: 'Make a space invaders game' },
-  { text: 'Make a Tic Tac Toe game in html, css and js only' },
+  { text: 'Build a Passive-Aggressive To-Do List that nags you every hour you ignore it.' },
+  { text: 'Make a Dad Joke Generator that only gets worse the more you use it.' },
+  { text: 'Create a Daily Excuse Machine for why you did not finish your side project.' },
+  {
+    text: 'Spin up a "Mood Swing Weather App" that gives brutally honest forecasts ("You will cry twice before lunch")',
+  },
+  {
+    text: 'Create a Naked Zoom Filter that randomly blurs clothes out on video calls (for educational purposes, obviously)',
+  },
+  {
+    text: 'Design a "Petty Payment Splitter" that calculates and Venmo-requests your friends for things like two fries and a sip of Coke.',
+  },
 ];
 
 export function ExamplePrompts(sendMessage?: { (event: React.UIEvent, messageInput?: string): void | undefined }) {

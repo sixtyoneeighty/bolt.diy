@@ -20,7 +20,37 @@ const customIconCollection = iconPaths.reduce(
 );
 
 const BASE_COLORS = {
+  // Brand Colors - Black, Cream, Red theme
+  black: '#000000',
   white: '#FFFFFF',
+  cream: {
+    50: '#FEFCF8',
+    100: '#FDF9F1',
+    200: '#FAF2E3',
+    300: '#F5E8CC',
+    400: '#EFDBAA',
+    500: '#E8CC85', // Primary cream
+    600: '#D4B366',
+    700: '#B8954A',
+    800: '#8F7238',
+    900: '#6B5529',
+    950: '#4A3A1C',
+  },
+  // Brand red (matching logo)
+  red: {
+    50: '#FEF2F2',
+    100: '#FEE2E2',
+    200: '#FECACA',
+    300: '#FCA5A5',
+    400: '#FF6B6B', // Lighter red for better contrast on dark backgrounds
+    500: '#DC2626', // Primary red (matching logo)
+    600: '#B91C1C',
+    700: '#991B1B',
+    800: '#7F1D1D',
+    900: '#450A0A',
+    950: '#2D0505',
+  },
+  // Updated gray scale for better integration with black/cream theme
   gray: {
     50: '#FAFAFA',
     100: '#F5F5F5',
@@ -34,19 +64,21 @@ const BASE_COLORS = {
     900: '#171717',
     950: '#0A0A0A',
   },
+  // Keep accent as red for consistency with brand
   accent: {
-    50: '#F8F5FF',
-    100: '#F0EBFF',
-    200: '#E1D6FF',
-    300: '#CEBEFF',
-    400: '#B69EFF',
-    500: '#9C7DFF',
-    600: '#8A5FFF',
-    700: '#7645E8',
-    800: '#6234BB',
-    900: '#502D93',
-    950: '#2D1959',
+    50: '#FEF2F2',
+    100: '#FEE2E2',
+    200: '#FECACA',
+    300: '#FCA5A5',
+    400: '#FF6B6B', // Lighter red for better contrast on dark backgrounds
+    500: '#DC2626', // Primary brand red
+    600: '#B91C1C',
+    700: '#991B1B',
+    800: '#7F1D1D',
+    900: '#450A0A',
+    950: '#2D0505',
   },
+  // Keep green and orange for status/utility colors
   green: {
     50: '#F0FDF4',
     100: '#DCFCE7',
@@ -72,25 +104,14 @@ const BASE_COLORS = {
     800: '#93370D',
     900: '#792E0D',
   },
-  red: {
-    50: '#FEF2F2',
-    100: '#FEE2E2',
-    200: '#FECACA',
-    300: '#FCA5A5',
-    400: '#F87171',
-    500: '#EF4444',
-    600: '#DC2626',
-    700: '#B91C1C',
-    800: '#991B1B',
-    900: '#7F1D1D',
-    950: '#450A0A',
-  },
 };
 
 const COLOR_PRIMITIVES = {
   ...BASE_COLORS,
   alpha: {
     white: generateAlphaPalette(BASE_COLORS.white),
+    black: generateAlphaPalette(BASE_COLORS.black),
+    cream: generateAlphaPalette(BASE_COLORS.cream[500]),
     gray: generateAlphaPalette(BASE_COLORS.gray[900]),
     red: generateAlphaPalette(BASE_COLORS.red[500]),
     accent: generateAlphaPalette(BASE_COLORS.accent[500]),

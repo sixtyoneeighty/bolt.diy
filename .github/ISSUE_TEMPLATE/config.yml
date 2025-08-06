@@ -1,6 +1,6 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Bolt.new related issues
+  - name: Mojo.new related issues
     url: https://github.com/stackblitz/bolt.new/issues/new/choose
     about: Report issues related to Bolt.new (not Bolt.diy)
   - name: Chat

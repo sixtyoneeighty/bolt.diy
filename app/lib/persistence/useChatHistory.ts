@@ -5,6 +5,7 @@ import { generateId, type JSONValue, type Message } from 'ai';
 import { toast } from 'react-toastify';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { logStore } from '~/lib/stores/logs'; // Import logStore
+import { createScopedLogger } from '~/utils/logger';
 import {
   getMessages,
   getNextId,
@@ -22,6 +23,7 @@ import type { Snapshot } from './types';
 import { webcontainer } from '~/lib/webcontainer';
 import { detectProjectCommands, createCommandActionsString } from '~/utils/projectCommands';
 import type { ContextAnnotation } from '~/types/context';
+import { chatSyncService } from './chatSync';
 
 export interface ChatHistoryItem {
   id: string;
@@ -32,6 +34,7 @@ export interface ChatHistoryItem {
   metadata?: IChatMetadata;
 }
 
+const logger = createScopedLogger('ChatHistory');
 const persistenceEnabled = !import.meta.env.VITE_DISABLE_PERSISTENCE;
 
 export const db = persistenceEnabled ? await openDatabase() : undefined;
@@ -130,7 +133,7 @@ export function useChatHistory() {
                   role: 'assistant',
 
                   // Combine followup message and the artifact with files and command actions
-                  content: `Bolt Restored your chat from a snapshot. You can revert this message to load the full chat history.
+                  content: `Mojo Restored your chat from a snapshot. You can revert this message to load the full chat history.
                   <boltArtifact id="restored-project-setup" title="Restored Project & Setup" type="bundled">
                   ${Object.entries(snapshot?.files || {})
                     .map(([key, value]) => {
@@ -332,6 +335,27 @@ ${value.content}
         return;
       }
 
+      // Get current user info for authenticated chats
+      const currentMetadata = chatMetadata.get();
+
+      // Import user store to get current user
+      const { userProfileStore } = await import('~/lib/stores/user');
+      const currentUser = userProfileStore.get();
+
+      // Add user information to metadata if user is authenticated
+      let updatedMetadata: IChatMetadata | undefined = currentMetadata;
+
+      if (currentUser) {
+        updatedMetadata = {
+          gitUrl: currentMetadata?.gitUrl || '',
+          gitBranch: currentMetadata?.gitBranch,
+          netlifySiteId: currentMetadata?.netlifySiteId,
+          userId: currentUser.id,
+          syncStatus: 'pending' as const, // Mark as pending to trigger sync
+          lastSyncAt: new Date().toISOString(),
+        };
+      }
+
       await setMessages(
         db,
         finalChatId, // Use the potentially updated chatId
@@ -339,8 +363,19 @@ ${value.content}
         urlId,
         description.get(),
         undefined,
-        chatMetadata.get(),
+        updatedMetadata,
       );
+
+      // Trigger sync for authenticated users
+      if (currentUser && updatedMetadata?.syncStatus === 'pending') {
+        try {
+          await chatSyncService.syncChat(finalChatId);
+        } catch (error) {
+          logger.error('Failed to sync chat after saving messages', error);
+
+          // Don't throw error to avoid breaking the save operation
+        }
+      }
     },
     duplicateCurrentChat: async (listItemId: string) => {
       if (!db || (!mixedId && !listItemId)) {
@@ -394,6 +429,90 @@ ${value.content}
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+    },
+    syncChat: async (targetChatId?: string) => {
+      const id = targetChatId || chatId.get();
+
+      if (!id) {
+        return { success: false, error: 'No chat ID provided' };
+      }
+
+      try {
+        const result = await chatSyncService.syncChat(id);
+
+        if (result.success) {
+          toast.success('Chat synchronized successfully');
+        } else {
+          toast.error(`Sync failed: ${result.error}`);
+        }
+
+        return result;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        toast.error(`Sync failed: ${errorMessage}`);
+
+        return { success: false, chatId: id, error: errorMessage };
+      }
+    },
+    getSyncStatus: async (targetChatId?: string) => {
+      const id = targetChatId || chatId.get();
+
+      if (!id) {
+        return { syncStatus: 'synced' as const, pendingChanges: [] };
+      }
+
+      return await chatSyncService.getSyncStatus(id);
+    },
+    resolveConflict: async (
+      targetChatId: string,
+      resolution: 'local' | 'remote' | 'merged',
+      resolvedMessages?: Message[],
+    ) => {
+      try {
+        const success = await chatSyncService.resolveConflict(targetChatId, resolution, resolvedMessages);
+
+        if (success) {
+          toast.success('Conflict resolved successfully');
+
+          // Refresh the current chat if it's the one being resolved
+          if (targetChatId === chatId.get()) {
+            window.location.reload();
+          }
+        } else {
+          toast.error('Failed to resolve conflict');
+        }
+
+        return success;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        toast.error(`Failed to resolve conflict: ${errorMessage}`);
+
+        return false;
+      }
+    },
+    enableAutoSync: (userId: string) => {
+      return chatSyncService.enableAutoSync(userId);
+    },
+    transferUnauthenticatedChats: async (userId: string) => {
+      if (!db) {
+        return 0;
+      }
+
+      try {
+        const { transferUnauthenticatedChats } = await import('./chats');
+        const count = await transferUnauthenticatedChats(db, userId);
+
+        if (count > 0) {
+          toast.success(`Transferred ${count} chat${count > 1 ? 's' : ''} to your account`);
+        }
+
+        return count;
+      } catch (error) {
+        logger.error('Failed to transfer unauthenticated chats', error);
+        toast.error('Failed to transfer existing chats to your account');
+
+        return 0;
+      }
     },
   };
 }

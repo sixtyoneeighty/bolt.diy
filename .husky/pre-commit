@@ -2,6 +2,9 @@
 
 echo "🔍 Running pre-commit hook to check the code looks good... 🔍"
 
+# Ensure proper PATH for Homebrew and system binaries
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
 # Load NVM if available (useful for managing Node.js versions)
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
