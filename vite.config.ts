@@ -21,6 +21,7 @@ export default defineConfig((config) => {
           if (id.includes('istextorbinary')) {
             return false;
           }
+
           return false;
         },
       },
