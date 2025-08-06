@@ -4,7 +4,7 @@
 
 import type { Message } from 'ai';
 import type { IChatMetadata } from './db';
-import type { AuthenticatedChatData, ConflictResolution } from './types';
+import type { AuthenticatedChatData } from './types';
 
 export interface ChatMessage {
   id: string;

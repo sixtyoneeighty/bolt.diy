@@ -29,14 +29,14 @@ export interface SessionRefreshResult {
 }
 
 export class SessionManager {
-  private refreshTimer: NodeJS.Timeout | null = null;
-  private isRefreshing = false;
-  private refreshPromise: Promise<SessionRefreshResult> | null = null;
+  private _refreshTimer: NodeJS.Timeout | null = null;
+  private _isRefreshing = false;
+  private _refreshPromise: Promise<SessionRefreshResult> | null = null;
 
   constructor() {
     // Initialize session check on client side
     if (isBrowser()) {
-      this.initializeSessionCheck();
+      this._initializeSessionCheck();
     }
   }
 
@@ -66,7 +66,7 @@ export class SessionManager {
       setUserProfile(user);
 
       // Start automatic refresh timer
-      this.scheduleTokenRefresh(session.expiresAt);
+      this._scheduleTokenRefresh(session.expiresAt);
 
       console.log('Session stored successfully');
     } catch (error) {
@@ -172,7 +172,7 @@ export class SessionManager {
       setUserProfile(stored.user);
 
       // Schedule refresh if needed
-      this.scheduleTokenRefresh(session.expiresAt);
+      this._scheduleTokenRefresh(session.expiresAt);
 
       console.log('Session restored successfully');
 
@@ -190,26 +190,26 @@ export class SessionManager {
    */
   async refreshSession(): Promise<SessionRefreshResult> {
     // Prevent multiple simultaneous refresh attempts
-    if (this.isRefreshing && this.refreshPromise) {
-      return this.refreshPromise;
+    if (this._isRefreshing && this._refreshPromise) {
+      return this._refreshPromise;
     }
 
-    this.isRefreshing = true;
-    this.refreshPromise = this.performRefresh();
+    this._isRefreshing = true;
+    this._refreshPromise = this._performRefresh();
 
     try {
-      const result = await this.refreshPromise;
+      const result = await this._refreshPromise;
       return result;
     } finally {
-      this.isRefreshing = false;
-      this.refreshPromise = null;
+      this._isRefreshing = false;
+      this._refreshPromise = null;
     }
   }
 
   /**
    * Perform the actual token refresh
    */
-  private async performRefresh(): Promise<SessionRefreshResult> {
+  private async _performRefresh(): Promise<SessionRefreshResult> {
     try {
       const stored = this.getStoredSession();
 
@@ -266,10 +266,10 @@ export class SessionManager {
   /**
    * Schedule automatic token refresh
    */
-  private scheduleTokenRefresh(expiresAt: Date): void {
+  private _scheduleTokenRefresh(expiresAt: Date): void {
     // Clear existing timer
-    if (this.refreshTimer) {
-      clearTimeout(this.refreshTimer);
+    if (this._refreshTimer) {
+      clearTimeout(this._refreshTimer);
     }
 
     const now = Date.now();
@@ -278,7 +278,7 @@ export class SessionManager {
     const timeUntilRefresh = refreshTime - now;
 
     if (timeUntilRefresh > 0) {
-      this.refreshTimer = setTimeout(async () => {
+      this._refreshTimer = setTimeout(async () => {
         console.log('Automatic token refresh triggered');
         await this.refreshSession();
       }, timeUntilRefresh);
@@ -294,11 +294,11 @@ export class SessionManager {
   /**
    * Initialize periodic session validity checks
    */
-  private initializeSessionCheck(): void {
+  private _initializeSessionCheck(): void {
     // Check session validity periodically
     setInterval(() => {
       if (this.isSessionValid()) {
-        if (this.needsRefresh() && !this.isRefreshing) {
+        if (this.needsRefresh() && !this._isRefreshing) {
           console.log('Session needs refresh, triggering automatic refresh');
           this.refreshSession();
         }
@@ -330,9 +330,9 @@ export class SessionManager {
       clearUserData();
 
       // Clear refresh timer
-      if (this.refreshTimer) {
-        clearTimeout(this.refreshTimer);
-        this.refreshTimer = null;
+      if (this._refreshTimer) {
+        clearTimeout(this._refreshTimer);
+        this._refreshTimer = null;
       }
 
       console.log('Session data cleared');

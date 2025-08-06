@@ -6,7 +6,7 @@ import { ThemeSwitch } from '~/components/ui/ThemeSwitch';
 import { ControlPanel } from '~/components/@settings/core/ControlPanel';
 import { SettingsButton } from '~/components/ui/SettingsButton';
 import { Button } from '~/components/ui/Button';
-import { db, deleteById, getAll, chatId, type ChatHistoryItem, useChatHistory } from '~/lib/persistence';
+import { db, deleteById, chatId, type ChatHistoryItem, useChatHistory } from '~/lib/persistence';
 import { getChatsByUserId, getUnauthenticatedChats } from '~/lib/persistence/db';
 import { cubicEasingFn } from '~/utils/easings';
 import { HistoryItem } from './HistoryItem';
@@ -14,8 +14,7 @@ import { binDates } from './date-binning';
 import { useSearchFilter } from '~/lib/hooks/useSearchFilter';
 import { classNames } from '~/utils/classNames';
 import { useStore } from '@nanostores/react';
-import { profileStore } from '~/lib/stores/profile';
-import { ProfileMenu } from '~/components/auth/ProfileMenu';
+
 import { userProfileStore, userDisplayNameStore, userInitialsStore, isAuthenticatedStore } from '~/lib/stores/user';
 import { useClerkSync, useAuthActions } from '~/lib/auth/clerk.client';
 
@@ -74,7 +73,7 @@ export const Menu = () => {
   const [open, setOpen] = useState(false);
   const [dialogContent, setDialogContent] = useState<DialogContent>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const profile = useStore(profileStore);
+
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
@@ -83,7 +82,7 @@ export const Menu = () => {
   const displayName = useStore(userDisplayNameStore);
   const userInitials = useStore(userInitialsStore);
   const isAuthenticated = useStore(isAuthenticatedStore);
-  const { user, isSignedIn, isLoaded } = useClerkSync();
+  const { isLoaded } = useClerkSync();
   const { signIn, signOut, openProfile } = useAuthActions();
 
   const { filteredItems: filteredList, handleSearchChange } = useSearchFilter({

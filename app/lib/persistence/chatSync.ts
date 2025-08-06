@@ -5,7 +5,7 @@
 import type { Message } from 'ai';
 import { createScopedLogger } from '~/utils/logger';
 import type { AuthenticatedChat } from './chats';
-import type { ConflictResolution, SyncMetadata } from './types';
+import type { ConflictResolution } from './types';
 import {
   openDatabase,
   markChatForSync,
@@ -14,10 +14,7 @@ import {
   resolveConflict,
   getChatsBySyncStatus,
   getSyncMetadata,
-  setSyncMetadata,
   getMessages,
-  setMessages,
-  type IChatMetadata,
 } from './db';
 
 const logger = createScopedLogger('ChatSync');
@@ -35,16 +32,16 @@ export interface SyncOptions {
 }
 
 export class ChatSyncService {
-  private db: IDBDatabase | undefined;
-  private syncInProgress = new Set<string>();
+  private _db: IDBDatabase | undefined;
+  private _syncInProgress = new Set<string>();
 
   constructor() {
-    this.initializeDatabase();
+    this._initializeDatabase();
   }
 
-  private async initializeDatabase(): Promise<void> {
+  private async _initializeDatabase(): Promise<void> {
     try {
-      this.db = await openDatabase();
+      this._db = await openDatabase();
     } catch (error) {
       logger.error('Failed to initialize database for sync service', error);
     }
@@ -54,31 +51,31 @@ export class ChatSyncService {
    * Sync a specific chat with the server
    */
   async syncChat(chatId: string, options: SyncOptions = {}): Promise<SyncResult> {
-    if (!this.db) {
+    if (!this._db) {
       return { success: false, chatId, error: 'Database not available' };
     }
 
-    if (this.syncInProgress.has(chatId)) {
+    if (this._syncInProgress.has(chatId)) {
       return { success: false, chatId, error: 'Sync already in progress' };
     }
 
-    this.syncInProgress.add(chatId);
+    this._syncInProgress.add(chatId);
 
     try {
-      const chat = await getMessages(this.db, chatId);
+      const chat = await getMessages(this._db, chatId);
 
       if (!chat) {
         return { success: false, chatId, error: 'Chat not found' };
       }
 
       // Mark chat as pending sync
-      await markChatForSync(this.db, chatId, ['messages']);
+      await markChatForSync(this._db, chatId, ['messages']);
 
       // Simulate server sync (in a real implementation, this would make API calls)
-      const syncResult = await this.performServerSync(chat, options);
+      const syncResult = await this._performServerSync(chat, options);
 
       if (syncResult.success) {
-        await markChatSynced(this.db, chatId);
+        await markChatSynced(this._db, chatId);
       }
 
       return syncResult;
@@ -90,7 +87,7 @@ export class ChatSyncService {
         error: error instanceof Error ? error.message : 'Unknown error',
       };
     } finally {
-      this.syncInProgress.delete(chatId);
+      this._syncInProgress.delete(chatId);
     }
   }
 
@@ -98,12 +95,12 @@ export class ChatSyncService {
    * Sync all pending chats for a user
    */
   async syncAllChats(userId: string, options: SyncOptions = {}): Promise<SyncResult[]> {
-    if (!this.db) {
+    if (!this._db) {
       return [];
     }
 
     try {
-      const pendingChats = await getChatsBySyncStatus(this.db, 'pending');
+      const pendingChats = await getChatsBySyncStatus(this._db, 'pending');
       const userChats = pendingChats.filter((chat) => chat.metadata?.userId === userId);
 
       const results: SyncResult[] = [];
@@ -128,12 +125,12 @@ export class ChatSyncService {
     resolution: 'local' | 'remote' | 'merged',
     resolvedMessages?: Message[],
   ): Promise<boolean> {
-    if (!this.db) {
+    if (!this._db) {
       return false;
     }
 
     try {
-      await resolveConflict(this.db, chatId, resolution, resolvedMessages);
+      await resolveConflict(this._db, chatId, resolution, resolvedMessages);
       logger.info(`Conflict resolved for chat ${chatId} using ${resolution} resolution`);
 
       return true;
@@ -151,13 +148,13 @@ export class ChatSyncService {
     lastSyncAt?: string;
     pendingChanges: string[];
   }> {
-    if (!this.db) {
+    if (!this._db) {
       return { syncStatus: 'synced', pendingChanges: [] };
     }
 
     try {
-      const chat = await getMessages(this.db, chatId);
-      const syncMetadata = await getSyncMetadata(this.db, chatId);
+      const chat = await getMessages(this._db, chatId);
+      const syncMetadata = await getSyncMetadata(this._db, chatId);
 
       return {
         syncStatus: chat?.metadata?.syncStatus || 'synced',
@@ -181,18 +178,18 @@ export class ChatSyncService {
    * Check for conflicts between local and remote versions
    */
   async checkForConflicts(chatId: string, remoteMessages: Message[]): Promise<ConflictResolution | null> {
-    if (!this.db) {
+    if (!this._db) {
       return null;
     }
 
     try {
-      const chat = await getMessages(this.db, chatId);
+      const chat = await getMessages(this._db, chatId);
 
       if (!chat) {
         return null;
       }
 
-      return await detectConflict(this.db, chatId, chat.messages, remoteMessages);
+      return await detectConflict(this._db, chatId, chat.messages, remoteMessages);
     } catch (error) {
       logger.error(`Failed to check for conflicts in chat ${chatId}`, error);
       return null;
@@ -237,7 +234,7 @@ export class ChatSyncService {
   /**
    * Simulate server synchronization (placeholder for actual API calls)
    */
-  private async performServerSync(chat: any, options: SyncOptions): Promise<SyncResult> {
+  private async _performServerSync(chat: any, _options: SyncOptions): Promise<SyncResult> {
     /*
      * In a real implementation, this would:
      * 1. Send local changes to server
@@ -289,12 +286,12 @@ export class ChatSyncService {
    * Get all chats that have conflicts
    */
   async getConflictedChats(userId?: string): Promise<AuthenticatedChat[]> {
-    if (!this.db) {
+    if (!this._db) {
       return [];
     }
 
     try {
-      const conflictedChats = await getChatsBySyncStatus(this.db, 'conflict');
+      const conflictedChats = await getChatsBySyncStatus(this._db, 'conflict');
 
       if (userId) {
         return conflictedChats.filter((chat) => chat.metadata?.userId === userId) as AuthenticatedChat[];

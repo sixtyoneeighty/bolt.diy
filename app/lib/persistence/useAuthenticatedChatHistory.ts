@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 import type { Message } from 'ai';
 import { createScopedLogger } from '~/utils/logger';
 import { openDatabase } from './db';
-import { getChatsByUserId, getChatsNeedingSync, type AuthenticatedChat } from './chats';
+import { getChatsByUserId, type AuthenticatedChat } from './chats';
 import { chatSyncService, type SyncResult } from './chatSync';
 import { userProfileStore } from '~/lib/stores/user';
 
@@ -184,7 +184,9 @@ export function useAuthenticatedChatHistory(): UseAuthenticatedChatHistoryReturn
   // Enable auto-sync
   const enableAutoSync = useCallback((): (() => void) => {
     if (!currentUser) {
-      return () => {};
+      return () => {
+        // No-op cleanup function when user is not authenticated
+      };
     }
 
     return chatSyncService.enableAutoSync(currentUser.id);

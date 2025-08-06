@@ -41,9 +41,9 @@ export interface AuthService {
 }
 
 export class ClerkAuthService implements AuthService {
-  private user: UserProfile | null = null;
-  private session: UserSession | null = null;
-  private authStateCallbacks: ((user: UserProfile | null) => void)[] = [];
+  private _user: UserProfile | null = null;
+  private _session: UserSession | null = null;
+  private _authStateCallbacks: ((user: UserProfile | null) => void)[] = [];
 
   async getCurrentUser(): Promise<UserProfile | null> {
     try {
@@ -51,14 +51,14 @@ export class ClerkAuthService implements AuthService {
        * In a real implementation, this would use Clerk's useUser hook or getAuth
        * For now, return cached user or null
        */
-      return this.user;
+      return this._user;
     } catch (error) {
       console.error('Error getting current user:', error);
       return null;
     }
   }
 
-  async getUserById(id: string): Promise<UserProfile | null> {
+  async getUserById(_id: string): Promise<UserProfile | null> {
     try {
       /*
        * This would make an API call to get user by ID
@@ -77,11 +77,11 @@ export class ClerkAuthService implements AuthService {
        * This would make an API call to update user profile
        * For now, merge updates with current user
        */
-      if (this.user && this.user.id === id) {
-        this.user = { ...this.user, ...updates, updatedAt: new Date() };
-        this.notifyAuthStateChange(this.user);
+      if (this._user && this._user.id === id) {
+        this._user = { ...this._user, ...updates, updatedAt: new Date() };
+        this._notifyAuthStateChange(this._user);
 
-        return this.user;
+        return this._user;
       }
 
       throw new Error('User not found or not authenticated');
@@ -94,15 +94,15 @@ export class ClerkAuthService implements AuthService {
   async getCurrentSession(): Promise<UserSession | null> {
     try {
       // Check if we have a valid session in memory
-      if (this.session && sessionManager.isSessionValid()) {
-        return this.session;
+      if (this._session && sessionManager.isSessionValid()) {
+        return this._session;
       }
 
       // Try to restore from storage
       const restored = await this.restoreSession();
 
       if (restored) {
-        return this.session;
+        return this._session;
       }
 
       return null;
@@ -117,7 +117,7 @@ export class ClerkAuthService implements AuthService {
       const refreshResult = await sessionManager.refreshSession();
 
       if (refreshResult.success && refreshResult.session) {
-        this.session = refreshResult.session;
+        this._session = refreshResult.session;
         return refreshResult.session;
       }
 
@@ -157,15 +157,15 @@ export class ClerkAuthService implements AuthService {
         const storedSession = sessionManager.getStoredSession();
 
         if (storedSession) {
-          this.user = storedSession.user;
-          this.session = {
+          this._user = storedSession.user;
+          this._session = {
             id: `session_${storedSession.userId}`,
             userId: storedSession.userId,
             token: storedSession.token,
             expiresAt: new Date(storedSession.expiresAt),
             createdAt: new Date(),
           };
-          this.notifyAuthStateChange(this.user);
+          this._notifyAuthStateChange(this._user);
         }
       }
 
@@ -182,11 +182,11 @@ export class ClerkAuthService implements AuthService {
       await sessionManager.logout();
 
       // Clear local state
-      this.user = null;
-      this.session = null;
+      this._user = null;
+      this._session = null;
 
       // Notify auth state change
-      this.notifyAuthStateChange(null);
+      this._notifyAuthStateChange(null);
     } catch (error) {
       console.error('Error during logout:', error);
       throw error;
@@ -194,20 +194,20 @@ export class ClerkAuthService implements AuthService {
   }
 
   onAuthStateChange(callback: (user: UserProfile | null) => void): () => void {
-    this.authStateCallbacks.push(callback);
+    this._authStateCallbacks.push(callback);
 
     // Return unsubscribe function
     return () => {
-      const index = this.authStateCallbacks.indexOf(callback);
+      const index = this._authStateCallbacks.indexOf(callback);
 
       if (index > -1) {
-        this.authStateCallbacks.splice(index, 1);
+        this._authStateCallbacks.splice(index, 1);
       }
     };
   }
 
-  private notifyAuthStateChange(user: UserProfile | null): void {
-    this.authStateCallbacks.forEach((callback) => {
+  private _notifyAuthStateChange(user: UserProfile | null): void {
+    this._authStateCallbacks.forEach((callback) => {
       try {
         callback(user);
       } catch (error) {
@@ -219,7 +219,7 @@ export class ClerkAuthService implements AuthService {
   // Helper method to set user (used by Clerk integration)
   setUser(clerkUser: User | null): void {
     if (clerkUser) {
-      this.user = {
+      this._user = {
         id: clerkUser.id,
         email: clerkUser.emailAddresses[0]?.emailAddress || '',
         username: clerkUser.username || undefined,
@@ -230,10 +230,10 @@ export class ClerkAuthService implements AuthService {
         updatedAt: new Date(clerkUser.updatedAt),
       };
     } else {
-      this.user = null;
+      this._user = null;
     }
 
-    this.notifyAuthStateChange(this.user);
+    this._notifyAuthStateChange(this._user);
   }
 }
 

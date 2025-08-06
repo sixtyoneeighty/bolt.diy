@@ -41,6 +41,12 @@ async function enhancerAction({ context, request }: ActionFunctionArgs) {
   const providerSettings = getProviderSettingsFromCookie(cookieHeader);
 
   try {
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 30000); // 30 second timeout
+
     const result = await streamText({
       messages: [
         {
@@ -83,17 +89,12 @@ async function enhancerAction({ context, request }: ActionFunctionArgs) {
       options: {
         system:
           'You are a senior software principal architect, you should help the user analyse the user query and enrich it with the necessary context and constraints to make it more specific, actionable, and effective. You should also ensure that the prompt is self-contained and uses professional language. Your response should ONLY contain the enhanced prompt text. Do not include any explanations, metadata, or wrapper tags.',
-
-        /*
-         * onError: (event) => {
-         *   throw new Response(null, {
-         *     status: 500,
-         *     statusText: 'Internal Server Error',
-         *   });
-         * }
-         */
+        abortSignal: controller.signal,
       },
     });
+
+    // Clear timeout if request succeeds
+    clearTimeout(timeoutId);
 
     // Handle streaming errors in a non-blocking way
     (async () => {
@@ -120,16 +121,32 @@ async function enhancerAction({ context, request }: ActionFunctionArgs) {
       },
     });
   } catch (error: unknown) {
-    console.log(error);
+    logger.error('Enhancer error:', error);
 
-    if (error instanceof Error && error.message?.includes('API key')) {
-      throw new Response('Invalid or missing API key', {
-        status: 401,
-        statusText: 'Unauthorized',
-      });
+    if (error instanceof Error) {
+      if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+        throw new Response('Request timeout: Prompt enhancement took too long', {
+          status: 408,
+          statusText: 'Request Timeout',
+        });
+      }
+
+      if (error.message?.includes('API key')) {
+        throw new Response('Invalid or missing API key', {
+          status: 401,
+          statusText: 'Unauthorized',
+        });
+      }
+
+      if (error.message?.includes('rate limit') || error.message?.includes('quota')) {
+        throw new Response('Rate limit exceeded', {
+          status: 429,
+          statusText: 'Too Many Requests',
+        });
+      }
     }
 
-    throw new Response(null, {
+    throw new Response('Internal server error during prompt enhancement', {
       status: 500,
       statusText: 'Internal Server Error',
     });

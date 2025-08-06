@@ -11,7 +11,7 @@
  */
 
 // Helper function to get user from Clerk
-export async function getClerkUser(userId: string) {
+export async function getClerkUser(_userId: string) {
   try {
     // return await clerkClient.users.getUser(userId);
     return null; // Placeholder
@@ -23,8 +23,8 @@ export async function getClerkUser(userId: string) {
 
 // Helper function to update user in Clerk
 export async function updateClerkUser(
-  userId: string,
-  updates: {
+  _userId: string,
+  _updates: {
     firstName?: string;
     lastName?: string;
     username?: string;

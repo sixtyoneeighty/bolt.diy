@@ -33,52 +33,73 @@ export function usePromptEnhancer() {
       requestBody.apiKeys = apiKeys;
     }
 
-    const response = await fetch('/api/enhancer', {
-      method: 'POST',
-      body: JSON.stringify(requestBody),
-    });
-
-    const reader = response.body?.getReader();
-
     const originalInput = input;
+    let _input = '';
+    let timeoutId: NodeJS.Timeout | null = null;
 
-    if (reader) {
-      const decoder = new TextDecoder();
+    try {
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 30000); // 30 second timeout
 
-      let _input = '';
-      let _error;
+      const response = await fetch('/api/enhancer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
 
-      try {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const reader = response.body?.getReader();
+
+      if (reader) {
+        const decoder = new TextDecoder();
         setInput('');
 
+        // Add a read timeout for each chunk
         while (true) {
-          const { value, done } = await reader.read();
+          const readPromise = reader.read();
+          const chunkTimeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Chunk read timeout')), 10000);
+          });
+
+          const { value, done } = await Promise.race([readPromise, chunkTimeoutPromise]);
 
           if (done) {
             break;
           }
 
-          _input += decoder.decode(value);
+          const chunk = decoder.decode(value, { stream: true });
+          _input += chunk;
 
           logger.trace('Set input', _input);
-
           setInput(_input);
         }
-      } catch (error) {
-        _error = error;
-        setInput(originalInput);
-      } finally {
-        if (_error) {
-          logger.error(_error);
-        }
-
-        setEnhancingPrompt(false);
-        setPromptEnhanced(true);
-
-        setTimeout(() => {
-          setInput(_input);
-        });
+      } else {
+        throw new Error('No response body received');
       }
+    } catch (error) {
+      logger.error('Prompt enhancement error:', error);
+      setInput(originalInput);
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      setEnhancingPrompt(false);
+      setPromptEnhanced(true);
+
+      // Reset the enhanced state after a short delay
+      setTimeout(() => {
+        setPromptEnhanced(false);
+      }, 2000);
     }
   };
 

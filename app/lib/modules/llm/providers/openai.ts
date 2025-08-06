@@ -13,11 +13,9 @@ export default class OpenAIProvider extends BaseProvider {
   };
 
   staticModels: ModelInfo[] = [
-    { name: 'gpt-4o', label: 'GPT-4o', provider: 'OpenAI', maxTokenAllowed: 8000 },
     { name: 'gpt-4o-mini', label: 'GPT-4o Mini', provider: 'OpenAI', maxTokenAllowed: 8000 },
-    { name: 'gpt-4-turbo', label: 'GPT-4 Turbo', provider: 'OpenAI', maxTokenAllowed: 8000 },
-    { name: 'gpt-4', label: 'GPT-4', provider: 'OpenAI', maxTokenAllowed: 8000 },
-    { name: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo', provider: 'OpenAI', maxTokenAllowed: 8000 },
+    { name: 'o3', label: 'o3', provider: 'OpenAI', maxTokenAllowed: 8000 },
+    { name: 'gpt-4.1', label: 'GPT-4.1', provider: 'OpenAI', maxTokenAllowed: 8000 },
   ];
 
   async getDynamicModels(
@@ -44,6 +42,12 @@ export default class OpenAIProvider extends BaseProvider {
     });
 
     const res = (await response.json()) as any;
+
+    if (!res || !res.data || !Array.isArray(res.data)) {
+      console.warn(`Invalid response from OpenAI models API:`, res);
+      return [];
+    }
+
     const staticModelIds = this.staticModels.map((m) => m.name);
 
     const data = res.data.filter(

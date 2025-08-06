@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { motion } from 'framer-motion';
-import { userProfileStore, isAuthenticatedStore } from '~/lib/stores/user';
+import { userProfileStore } from '~/lib/stores/user';
 import { useClerkSync } from '~/lib/auth/clerk.client';
 import { LoginForm } from './LoginForm';
 import { AuthErrorBoundary, useAuthErrorReporting } from './AuthErrorBoundary';
@@ -25,7 +25,6 @@ export const AuthGuard = ({
   className,
 }: AuthGuardProps) => {
   const [showFallback, setShowFallback] = useState(false);
-  const isAuthenticated = useStore(isAuthenticatedStore);
 
   // const _user = useStore(userProfileStore); // Commented out as unused
   const { isLoaded, isSignedIn } = useClerkSync();
@@ -70,8 +69,11 @@ export const AuthGuard = ({
     );
   }
 
-  // If authentication is required but user is not authenticated
-  if (requireAuth && (!isSignedIn || !isAuthenticated)) {
+  /*
+   * If authentication is required but user is not authenticated
+   * Only check Clerk's isSignedIn to avoid conflicts with local store
+   */
+  if (requireAuth && !isSignedIn) {
     if (showFallback) {
       if (fallback) {
         return <>{fallback}</>;
@@ -136,15 +138,14 @@ export function withAuthGuard<P extends object>(
 
 // Hook for checking authentication status
 export function useAuthGuard(requireAuth: boolean = true) {
-  const isAuthenticated = useStore(isAuthenticatedStore);
   const user = useStore(userProfileStore);
   const { isLoaded, isSignedIn } = useClerkSync();
 
   return {
     isLoaded,
-    isAuthenticated: isSignedIn && isAuthenticated,
+    isAuthenticated: isSignedIn, // Use Clerk's state as primary source
     user,
-    canAccess: !requireAuth || (isSignedIn && isAuthenticated),
+    canAccess: !requireAuth || isSignedIn,
     isLoading: !isLoaded,
   };
 }

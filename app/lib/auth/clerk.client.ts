@@ -1,19 +1,8 @@
-import { useUser, useAuth, useClerk } from '@clerk/remix';
+import { useUser, useAuth, useClerk } from '@clerk/clerk-react';
 import { useEffect } from 'react';
-import { authService } from '~/lib/services/auth';
 import { sessionManager } from '~/lib/services/sessionManager';
-import { setUserProfile, setUserSession, clearUserData } from '~/lib/stores/user';
-import type { UserProfile, UserSession } from '~/lib/services/auth';
-
-// Check if Clerk is available
-const isClerkAvailable = () => {
-  try {
-    // Try to access Clerk context
-    return !!(typeof window !== 'undefined' && window.__clerk_publishable_key);
-  } catch {
-    return false;
-  }
-};
+import { setUserProfile, userProfileStore } from '~/lib/stores/user';
+import type { UserProfile } from '~/lib/services/auth';
 
 // Hook to sync Clerk auth state with our stores
 export function useClerkSync() {
@@ -23,18 +12,24 @@ export function useClerkSync() {
     isSignedIn: false,
     isLoaded: true,
     signOut: () => Promise.resolve(),
-    openSignIn: () => {},
-    openSignUp: () => {},
-    openUserProfile: () => {},
+    openSignIn: () => {
+      // Fallback implementation when Clerk is not available
+    },
+    openSignUp: () => {
+      // Fallback implementation when Clerk is not available
+    },
+    openUserProfile: () => {
+      // Fallback implementation when Clerk is not available
+    },
   };
 
   try {
-    const { user, isLoaded: userLoaded } = useUser();
+    const { user, isLoaded } = useUser();
     const { isSignedIn, sessionId, getToken } = useAuth();
     const clerk = useClerk();
 
     useEffect(() => {
-      if (!userLoaded) {
+      if (!isLoaded) {
         return;
       }
 
@@ -54,14 +49,12 @@ export function useClerkSync() {
         // Update our stores
         setUserProfile(userProfile);
 
-        // Note: authService.setUser expects a different User type, so we'll skip this for now
-
         // Create session if we have a sessionId
         if (sessionId) {
           getToken()
             .then((token) => {
               if (token) {
-                const session: UserSession = {
+                const session = {
                   id: sessionId,
                   userId: user.id,
                   token,
@@ -77,15 +70,21 @@ export function useClerkSync() {
             .catch(console.error);
         }
       } else {
-        // User is not signed in, clear our stores and session
-        sessionManager.logout().catch(console.error);
+        /*
+         * Only clear session when Clerk is fully loaded and user is definitely not signed in
+         * This prevents clearing on initial load when Clerk is still loading
+         */
+        if (isLoaded && userProfileStore.get()) {
+          console.log('Clearing session - user not signed in');
+          sessionManager.logout();
+        }
       }
-    }, [user, isSignedIn, sessionId, userLoaded, getToken]);
+    }, [user, isSignedIn, sessionId, isLoaded, getToken]);
 
     return {
       user,
       isSignedIn,
-      isLoaded: userLoaded,
+      isLoaded,
       signOut: () => clerk.signOut(),
       openSignIn: () => clerk.openSignIn(),
       openSignUp: () => clerk.openSignUp(),

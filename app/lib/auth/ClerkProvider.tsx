@@ -1,4 +1,4 @@
-import { ClerkApp as OriginalClerkApp } from '@clerk/remix';
+import { ClerkProvider } from '@clerk/clerk-react';
 import { dark } from '@clerk/themes';
 import type { ReactNode } from 'react';
 import { useStore } from '@nanostores/react';
@@ -121,144 +121,33 @@ interface ConditionalClerkAppProps {
 }
 
 function ConditionalClerkApp({ children }: ConditionalClerkAppProps) {
-  const isClerkConfigured = Boolean(
+  const theme = useStore(themeStore);
+  const publishableKey =
     typeof window !== 'undefined'
       ? (window as any).ENV?.CLERK_PUBLISHABLE_KEY || import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
-      : process.env.CLERK_PUBLISHABLE_KEY,
-  );
+      : process.env.CLERK_PUBLISHABLE_KEY;
 
+  const isClerkConfigured = Boolean(publishableKey);
+
+  // On server-side, always use FallbackProvider to avoid SSR issues
+  if (typeof window === 'undefined') {
+    return <FallbackProvider>{children}</FallbackProvider>;
+  }
+
+  // On client-side, use ClerkProvider if configured
   if (isClerkConfigured) {
-    // Use ClerkApp as a higher-order component
-    const WrappedComponent = () => <>{children}</>;
-    const ClerkWrappedComponent = OriginalClerkApp(WrappedComponent, {
-      appearance: {
-        baseTheme: dark,
-        variables: {
-          colorPrimary: '#3b82f6',
-          colorBackground: '#0f172a',
-          colorInputBackground: '#1e293b',
-          colorInputText: '#f1f5f9',
-          colorText: '#f1f5f9',
-          colorTextSecondary: '#94a3b8',
-          colorNeutral: '#64748b',
-          colorDanger: '#ef4444',
-          colorSuccess: '#10b981',
-          colorWarning: '#f59e0b',
-          borderRadius: '0.5rem',
-          fontFamily: 'Inter, system-ui, sans-serif',
-          fontSize: '0.875rem',
-          fontWeight: {
-            normal: '400',
-            medium: '500',
-            semibold: '600',
-            bold: '700',
-          },
-        },
-        elements: {
-          card: {
-            backgroundColor: '#1e293b',
-            border: '1px solid #334155',
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-          },
-          headerTitle: {
-            color: '#f1f5f9',
-            fontSize: '1.5rem',
-            fontWeight: '600',
-          },
-          headerSubtitle: {
-            color: '#94a3b8',
-          },
-          socialButtonsBlockButton: {
-            backgroundColor: '#334155',
-            border: '1px solid #475569',
-            color: '#f1f5f9',
-            '&:hover': {
-              backgroundColor: '#475569',
-            },
-          },
-          formFieldInput: {
-            backgroundColor: '#1e293b',
-            border: '1px solid #475569',
-            color: '#f1f5f9',
-            '&:focus': {
-              borderColor: '#3b82f6',
-              boxShadow: '0 0 0 1px #3b82f6',
-            },
-          },
-          formButtonPrimary: {
-            backgroundColor: '#3b82f6',
-            '&:hover': {
-              backgroundColor: '#2563eb',
-            },
-          },
-          footerActionLink: {
-            color: '#3b82f6',
-            '&:hover': {
-              color: '#2563eb',
-            },
-          },
-          identityPreviewText: {
-            color: '#f1f5f9',
-          },
-          identityPreviewEditButton: {
-            color: '#3b82f6',
-          },
-          formFieldLabel: {
-            color: '#f1f5f9',
-          },
-          formFieldHintText: {
-            color: '#94a3b8',
-          },
-          formFieldErrorText: {
-            color: '#ef4444',
-          },
-          dividerLine: {
-            backgroundColor: '#475569',
-          },
-          dividerText: {
-            color: '#94a3b8',
-          },
-          alternativeMethodsBlockButton: {
-            backgroundColor: '#334155',
-            border: '1px solid #475569',
-            color: '#f1f5f9',
-            '&:hover': {
-              backgroundColor: '#475569',
-            },
-          },
-          otpCodeFieldInput: {
-            backgroundColor: '#1e293b',
-            border: '1px solid #475569',
-            color: '#f1f5f9',
-            '&:focus': {
-              borderColor: '#3b82f6',
-            },
-          },
-          userButtonAvatarBox: {
-            width: '2rem',
-            height: '2rem',
-          },
-          userButtonPopoverCard: {
-            backgroundColor: '#1e293b',
-            border: '1px solid #334155',
-          },
-          userButtonPopoverActionButton: {
-            color: '#f1f5f9',
-            '&:hover': {
-              backgroundColor: '#334155',
-            },
-          },
-          userPreviewTextContainer: {
-            color: '#f1f5f9',
-          },
-          userPreviewSecondaryIdentifier: {
-            color: '#94a3b8',
-          },
-        },
-      },
-    });
-
-    return <ClerkWrappedComponent />;
+    return (
+      <ClerkProvider
+        publishableKey={publishableKey}
+        appearance={getClerkAppearance(theme)}
+        signInUrl="https://helpful-cicada-2.accounts.dev/sign-in"
+        signUpUrl="https://helpful-cicada-2.accounts.dev/sign-up"
+        afterSignInUrl={window.location.origin}
+        afterSignUpUrl={window.location.origin}
+      >
+        {children}
+      </ClerkProvider>
+    );
   }
 
   return <FallbackProvider>{children}</FallbackProvider>;

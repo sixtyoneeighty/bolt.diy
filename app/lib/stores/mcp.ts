@@ -47,16 +47,21 @@ export const useMCPStore = create<Store & Actions>((set, get) => ({
       if (savedConfig) {
         try {
           const settings = JSON.parse(savedConfig) as MCPSettings;
-          const serverTools = await updateServerConfig(settings.mcpConfig);
-          set(() => ({ settings, serverTools }));
+
+          // Add retry logic with exponential backoff for MCP server connection
+          const serverTools = await updateServerConfigWithRetry(settings.mcpConfig);
+          set(() => ({ settings, serverTools, error: null }));
         } catch (error) {
           console.error('Error parsing saved mcp config:', error);
           set(() => ({
             error: `Error parsing saved mcp config: ${error instanceof Error ? error.message : String(error)}`,
+            settings: defaultSettings,
+            serverTools: {},
           }));
         }
       } else {
         localStorage.setItem(MCP_SETTINGS_KEY, JSON.stringify(defaultSettings));
+        set(() => ({ settings: defaultSettings, serverTools: {}, error: null }));
       }
     }
 
@@ -109,7 +114,34 @@ async function updateServerConfig(config: MCPConfig) {
     throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
   }
 
-  const data = (await response.json()) as MCPServerTools;
+  return (await response.json()) as MCPServerTools;
+}
 
-  return data;
+async function updateServerConfigWithRetry(config: MCPConfig, maxRetries = 3): Promise<MCPServerTools> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      // Add delay before retry (exponential backoff)
+      if (attempt > 0) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+
+      return await updateServerConfig(config);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(`MCP config update attempt ${attempt + 1} failed:`, lastError.message);
+
+      // Don't retry on certain errors
+      if (lastError.message.includes('404') || lastError.message.includes('400')) {
+        break;
+      }
+    }
+  }
+
+  // If all retries failed, return empty tools instead of throwing
+  console.error('All MCP config update attempts failed, using empty configuration:', lastError?.message);
+
+  return {};
 }

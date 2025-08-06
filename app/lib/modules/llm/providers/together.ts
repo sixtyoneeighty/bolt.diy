@@ -14,22 +14,10 @@ export default class TogetherProvider extends BaseProvider {
 
   staticModels: ModelInfo[] = [
     {
-      name: 'Qwen/Qwen2.5-Coder-32B-Instruct',
-      label: 'Qwen/Qwen2.5-Coder-32B-Instruct',
+      name: 'openai/gpt-oss',
+      label: 'OpenAI GPT-OSS',
       provider: 'Together',
       maxTokenAllowed: 8000,
-    },
-    {
-      name: 'meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo',
-      label: 'meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo',
-      provider: 'Together',
-      maxTokenAllowed: 8000,
-    },
-    {
-      name: 'mistralai/Mixtral-8x7B-Instruct-v0.1',
-      label: 'Mixtral 8x7B Instruct',
-      provider: 'Together',
-      maxTokenAllowed: 8192,
     },
   ];
 
