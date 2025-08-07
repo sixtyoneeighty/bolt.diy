@@ -273,17 +273,6 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
             result.mergeIntoDataStream(dataStream);
 
-            (async () => {
-              for await (const part of result.fullStream) {
-                if (part.type === 'error') {
-                  const error: any = part.error;
-                  logger.error(`${error}`);
-
-                  return;
-                }
-              }
-            })();
-
             return;
           },
         };
@@ -312,16 +301,6 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           messageSliceId,
         });
 
-        (async () => {
-          for await (const part of result.fullStream) {
-            if (part.type === 'error') {
-              const error: any = part.error;
-              logger.error(`${error}`);
-
-              return;
-            }
-          }
-        })();
         result.mergeIntoDataStream(dataStream);
       },
       onError: (error: any) => `Custom error: ${error.message}`,

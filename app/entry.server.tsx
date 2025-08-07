@@ -29,6 +29,14 @@ export default async function handleRequest(
     },
   );
 
+  // Handle bot requests differently to avoid stream locking issues
+  const isBot = isbot(request.headers.get('user-agent') || '');
+
+  if (isBot) {
+    // For bots, wait for the stream to be ready before processing
+    await readable.allReady;
+  }
+
   const body = new ReadableStream({
     start(controller) {
       const head = renderHeadToString({ request, remixContext, Head });
@@ -41,15 +49,36 @@ export default async function handleRequest(
         ),
       );
 
-      const reader = readable.getReader();
+      // Check if the readable stream is already locked before getting a reader
+      if (readable.locked) {
+        controller.error(new Error('ReadableStream is already locked'));
 
-      function read() {
+        return;
+      }
+
+      let reader: ReadableStreamDefaultReader<Uint8Array>;
+
+      try {
+        reader = readable.getReader();
+      } catch (error: unknown) {
+        controller.error(new Error(`Failed to get reader: ${error}`));
+
+        return;
+      }
+
+      function read(): void {
         reader
           .read()
-          .then(({ done, value }) => {
+          .then(({ done, value }: ReadableStreamReadResult<Uint8Array>) => {
             if (done) {
               controller.enqueue(new Uint8Array(new TextEncoder().encode('</div></body></html>')));
               controller.close();
+
+              try {
+                reader.releaseLock(); // Release the lock when done
+              } catch (error: unknown) {
+                console.warn('Failed to release reader lock:', error);
+              }
 
               return;
             }
@@ -57,22 +86,28 @@ export default async function handleRequest(
             controller.enqueue(value);
             read();
           })
-          .catch((error) => {
+          .catch((error: unknown) => {
             controller.error(error);
-            readable.cancel();
+
+            try {
+              reader.releaseLock(); // Release the lock on error
+              readable.cancel();
+            } catch (releaseError: unknown) {
+              console.warn('Failed to release reader lock on error:', releaseError);
+            }
           });
       }
       read();
     },
 
     cancel() {
-      readable.cancel();
+      try {
+        readable.cancel();
+      } catch (error: unknown) {
+        console.warn('Failed to cancel readable stream:', error);
+      }
     },
   });
-
-  if (isbot(request.headers.get('user-agent') || '')) {
-    await readable.allReady;
-  }
 
   responseHeaders.set('Content-Type', 'text/html');
 

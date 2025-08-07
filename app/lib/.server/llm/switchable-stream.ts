@@ -21,14 +21,30 @@ export default class SwitchableStream extends TransformStream {
 
   async switchSource(newStream: ReadableStream) {
     if (this._currentReader) {
-      await this._currentReader.cancel();
+      try {
+        await this._currentReader.cancel();
+      } catch (error) {
+        console.warn('Error canceling current reader:', error);
+      }
+      this._currentReader = null;
     }
 
-    this._currentReader = newStream.getReader();
+    // Check if the new stream is already locked
+    if (newStream.locked) {
+      console.error('Cannot switch to a locked ReadableStream');
+      this._controller?.error(new Error('ReadableStream is already locked'));
 
-    this._pumpStream();
+      return;
+    }
 
-    this._switches++;
+    try {
+      this._currentReader = newStream.getReader();
+      this._pumpStream();
+      this._switches++;
+    } catch (error) {
+      console.error('Error getting reader from new stream:', error);
+      this._controller?.error(error);
+    }
   }
 
   private async _pumpStream() {
@@ -54,7 +70,12 @@ export default class SwitchableStream extends TransformStream {
 
   close() {
     if (this._currentReader) {
-      this._currentReader.cancel();
+      try {
+        this._currentReader.cancel();
+      } catch (error) {
+        console.warn('Error canceling reader during close:', error);
+      }
+      this._currentReader = null;
     }
 
     this._controller?.terminate();
