@@ -1,6 +1,5 @@
 import type { AppLoadContext } from '@remix-run/cloudflare';
 import { RemixServer } from '@remix-run/react';
-import { isbot } from 'isbot';
 import { renderToReadableStream } from 'react-dom/server';
 import { renderHeadToString } from 'remix-island';
 import { Head } from './root';
@@ -28,14 +27,6 @@ export default async function handleRequest(
       },
     },
   );
-
-  // Handle bot requests differently to avoid stream locking issues
-  const isBot = isbot(request.headers.get('user-agent') || '');
-
-  if (isBot) {
-    // For bots, wait for the stream to be ready before processing
-    await readable.allReady;
-  }
 
   const body = new ReadableStream({
     start(controller) {
