@@ -1,11 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useStore } from '@nanostores/react';
-import { motion } from 'framer-motion';
 import { userProfileStore } from '~/lib/stores/user';
-import { useClerkSync } from '~/lib/auth/clerk.client';
-import { LoginForm } from './LoginForm';
-import { AuthErrorBoundary, useAuthErrorReporting } from './AuthErrorBoundary';
-import { classNames } from '~/utils/classNames';
+import { AuthErrorBoundary } from './AuthErrorBoundary';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -18,106 +14,20 @@ interface AuthGuardProps {
 
 export const AuthGuard = ({
   children,
-  fallback,
-  redirectTo = '/',
+  fallback: _fallback,
+  redirectTo: _redirectTo = '/',
   requireAuth = true,
-  loadingComponent,
-  className,
+  loadingComponent: _loadingComponent,
+  className: _className,
 }: AuthGuardProps) => {
-  const [showFallback, setShowFallback] = useState(false);
-
-  // const _user = useStore(userProfileStore); // Commented out as unused
-  const { isLoaded, isSignedIn } = useClerkSync();
-  const { reportError } = useAuthErrorReporting();
-
+  // Authentication disabled - always allow access
   useEffect(() => {
-    try {
-      if (isLoaded && requireAuth && !isSignedIn) {
-        // Small delay to prevent flash
-        const timer = setTimeout(() => setShowFallback(true), 100);
-        return () => clearTimeout(timer);
-      } else {
-        setShowFallback(false);
-        return undefined;
-      }
-    } catch (error) {
-      reportError(error as Error, { context: 'AuthGuard useEffect' });
-      setShowFallback(true);
+    // No-op: authentication disabled
+  }, [requireAuth]);
 
-      return undefined;
-    }
-  }, [isLoaded, isSignedIn, requireAuth, reportError]);
+  // Authentication disabled - no loading state needed
 
-  // Show loading state while Clerk is initializing
-  if (!isLoaded) {
-    if (loadingComponent) {
-      return <>{loadingComponent}</>;
-    }
-
-    return (
-      <div
-        className={classNames(
-          'flex items-center justify-center min-h-screen bg-bolt-elements-background-depth-1',
-          className,
-        )}
-      >
-        <div className="text-center">
-          <div className="w-8 h-8 mx-auto mb-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-bolt-elements-textSecondary">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  /*
-   * If authentication is required but user is not authenticated
-   * Only check Clerk's isSignedIn to avoid conflicts with local store
-   */
-  if (requireAuth && !isSignedIn) {
-    if (showFallback) {
-      if (fallback) {
-        return <>{fallback}</>;
-      }
-
-      return (
-        <div
-          className={classNames(
-            'min-h-screen bg-bolt-elements-background-depth-1 flex flex-col items-center justify-center p-4',
-            className,
-          )}
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="w-full max-w-md"
-          >
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold text-bolt-elements-textPrimary mb-4">Welcome to Mojo</h1>
-              <p className="text-lg text-bolt-elements-textSecondary">
-                Sign in to start building amazing projects with AI
-              </p>
-            </div>
-            <LoginForm redirectUrl={redirectTo} onSuccess={() => setShowFallback(false)} />
-          </motion.div>
-        </div>
-      );
-    }
-
-    // Show loading state during the delay
-    return (
-      <div
-        className={classNames(
-          'flex items-center justify-center min-h-screen bg-bolt-elements-background-depth-1',
-          className,
-        )}
-      >
-        <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  // If authentication is not required or user is authenticated
+  // Authentication disabled - always show children
   return <AuthErrorBoundary>{children}</AuthErrorBoundary>;
 };
 
@@ -137,16 +47,16 @@ export function withAuthGuard<P extends object>(
 }
 
 // Hook for checking authentication status
-export function useAuthGuard(requireAuth: boolean = true) {
+export function useAuthGuard(_requireAuth: boolean = true) {
   const user = useStore(userProfileStore);
-  const { isLoaded, isSignedIn } = useClerkSync();
 
+  // Authentication disabled - always return authenticated state
   return {
-    isLoaded,
-    isAuthenticated: isSignedIn, // Use Clerk's state as primary source
+    isLoaded: true,
+    isAuthenticated: true,
     user,
-    canAccess: !requireAuth || isSignedIn,
-    isLoading: !isLoaded,
+    canAccess: true,
+    isLoading: false,
   };
 }
 
@@ -158,50 +68,12 @@ interface ProtectedSectionProps {
   className?: string;
 }
 
-export const ProtectedSection = ({ children, fallback, showLoginPrompt = true, className }: ProtectedSectionProps) => {
-  const { canAccess, isLoading } = useAuthGuard();
-
-  if (isLoading) {
-    return (
-      <div className={classNames('flex items-center justify-center p-8', className)}>
-        <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!canAccess) {
-    if (fallback) {
-      return <>{fallback}</>;
-    }
-
-    if (showLoginPrompt) {
-      return (
-        <div
-          className={classNames(
-            'p-6 bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor rounded-lg text-center',
-            className,
-          )}
-        >
-          <div className="i-ph:lock text-2xl text-bolt-elements-textTertiary mb-3" />
-          <h3 className="text-lg font-medium text-bolt-elements-textPrimary mb-2">Sign in required</h3>
-          <p className="text-sm text-bolt-elements-textSecondary mb-4">
-            You need to be signed in to access this feature.
-          </p>
-          <button
-            onClick={() => {
-              // This would trigger sign in
-              console.log('Sign in clicked');
-            }}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors"
-          >
-            Sign in
-          </button>
-        </div>
-      );
-    }
-
-    return null;
-  }
-
+export const ProtectedSection = ({
+  children,
+  fallback: _fallback,
+  showLoginPrompt: _showLoginPrompt = true,
+  className: _className,
+}: ProtectedSectionProps) => {
+  // Authentication disabled - always show children
   return <>{children}</>;
 };

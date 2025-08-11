@@ -7,7 +7,7 @@ export { SessionExpiryWarning, SessionStatusIndicator } from './SessionExpiryWar
 export { SessionInitializer, withSessionInitializer } from './SessionInitializer';
 
 // Re-export auth utilities
-export { useClerkSync, useAuthActions } from '~/lib/auth/clerk.client';
+/* Note: Clerk utilities removed - authentication disabled */
 export { authService } from '~/lib/services/auth';
 export { sessionManager } from '~/lib/services/sessionManager';
 export { useSessionManager, useSessionExpiry } from '~/lib/hooks/useSessionManager';

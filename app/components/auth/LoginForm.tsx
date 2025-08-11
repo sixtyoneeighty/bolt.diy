@@ -17,7 +17,7 @@ export const LoginForm = ({ onSuccess: _onSuccess, onCancel, redirectUrl = '/', 
     try {
       setIsLoading(true);
 
-      // Redirect to Clerk's hosted sign-in page with proper redirect URL
+      // Authentication disabled - no redirect needed
       const fullRedirectUrl = redirectUrl.startsWith('http') ? redirectUrl : `${window.location.origin}${redirectUrl}`;
       window.location.href = `https://helpful-cicada-2.accounts.dev/sign-in?redirect_url=${encodeURIComponent(fullRedirectUrl)}`;
     } catch (error) {
@@ -82,7 +82,7 @@ export const LoginForm = ({ onSuccess: _onSuccess, onCancel, redirectUrl = '/', 
   );
 };
 
-// Custom login form with manual validation (alternative to Clerk's built-in form)
+// Custom login form with manual validation (authentication disabled)
 interface CustomLoginFormProps {
   onSubmit: (email: string, password: string) => Promise<void>;
   onCancel?: () => void;

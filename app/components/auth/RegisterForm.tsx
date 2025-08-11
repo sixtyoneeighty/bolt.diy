@@ -15,7 +15,7 @@ export const RegisterForm = ({ onSuccess: _onSuccess, onCancel, redirectUrl = '/
   const handleSignUp = () => {
     setIsLoading(true);
 
-    // Redirect to Clerk's hosted sign-up page with proper redirect URL
+    // Authentication disabled - no redirect needed
     const fullRedirectUrl = redirectUrl.startsWith('http') ? redirectUrl : `${window.location.origin}${redirectUrl}`;
     window.location.href = `https://helpful-cicada-2.accounts.dev/sign-up?redirect_url=${encodeURIComponent(fullRedirectUrl)}`;
   };

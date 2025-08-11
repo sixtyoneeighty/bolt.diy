@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { userProfileStore, userDisplayNameStore, userInitialsStore } from '~/lib/stores/user';
-import { useClerkSync, useAuthActions } from '~/lib/auth/clerk.client';
 import { classNames } from '~/utils/classNames';
 
 interface ProfileMenuProps {
@@ -18,8 +17,15 @@ export const ProfileMenu = ({ className }: ProfileMenuProps) => {
   const displayName = useStore(userDisplayNameStore);
   const initials = useStore(userInitialsStore);
 
-  const { isSignedIn, isLoaded } = useClerkSync();
-  const { signIn, signUp, signOut, openProfile } = useAuthActions();
+  // Authentication disabled - always show as not signed in
+  const isSignedIn = false;
+  const isLoaded = true;
+
+  // No-op auth functions
+  const signIn = () => console.log('Authentication disabled');
+  const signUp = () => console.log('Authentication disabled');
+  const signOut = () => console.log('Authentication disabled');
+  const openProfile = () => console.log('Authentication disabled');
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -201,8 +207,14 @@ export const CompactProfileMenu = ({ className }: ProfileMenuProps) => {
   const user = useStore(userProfileStore);
   const initials = useStore(userInitialsStore);
 
-  const { isSignedIn, isLoaded } = useClerkSync();
-  const { signIn, signOut, openProfile } = useAuthActions();
+  // Authentication disabled - always show as not signed in
+  const isSignedIn = false;
+  const isLoaded = true;
+
+  // No-op auth functions
+  const signIn = () => console.log('Authentication disabled');
+  const signOut = () => console.log('Authentication disabled');
+  const openProfile = () => console.log('Authentication disabled');
 
   // Close menu when clicking outside
   useEffect(() => {

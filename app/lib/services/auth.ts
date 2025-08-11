@@ -1,4 +1,3 @@
-import type { User } from '@clerk/remix/ssr.server';
 import { sessionManager } from './sessionManager';
 
 export interface UserProfile {
@@ -40,7 +39,7 @@ export interface AuthService {
   logout(): Promise<void>;
 }
 
-export class ClerkAuthService implements AuthService {
+export class DefaultAuthService implements AuthService {
   private _user: UserProfile | null = null;
   private _session: UserSession | null = null;
   private _authStateCallbacks: ((user: UserProfile | null) => void)[] = [];
@@ -48,7 +47,7 @@ export class ClerkAuthService implements AuthService {
   async getCurrentUser(): Promise<UserProfile | null> {
     try {
       /*
-       * In a real implementation, this would use Clerk's useUser hook or getAuth
+       * In a real implementation, this would use authentication service hooks
        * For now, return cached user or null
        */
       return this._user;
@@ -216,26 +215,12 @@ export class ClerkAuthService implements AuthService {
     });
   }
 
-  // Helper method to set user (used by Clerk integration)
-  setUser(clerkUser: User | null): void {
-    if (clerkUser) {
-      this._user = {
-        id: clerkUser.id,
-        email: clerkUser.emailAddresses[0]?.emailAddress || '',
-        username: clerkUser.username || undefined,
-        firstName: clerkUser.firstName || undefined,
-        lastName: clerkUser.lastName || undefined,
-        avatar: clerkUser.imageUrl || undefined,
-        createdAt: new Date(clerkUser.createdAt),
-        updatedAt: new Date(clerkUser.updatedAt),
-      };
-    } else {
-      this._user = null;
-    }
-
+  // Helper method to set user
+  setUser(user: UserProfile | null): void {
+    this._user = user;
     this._notifyAuthStateChange(this._user);
   }
 }
 
 // Singleton instance
-export const authService = new ClerkAuthService();
+export const authService = new DefaultAuthService();

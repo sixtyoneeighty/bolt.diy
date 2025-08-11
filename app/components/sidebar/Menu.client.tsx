@@ -16,7 +16,8 @@ import { classNames } from '~/utils/classNames';
 import { useStore } from '@nanostores/react';
 
 import { userProfileStore, userDisplayNameStore, userInitialsStore, isAuthenticatedStore } from '~/lib/stores/user';
-import { useClerkSync, useAuthActions } from '~/lib/auth/clerk.client';
+
+// Clerk authentication removed - using no-op functions
 
 const menuVariants = {
   closed: {
@@ -82,8 +83,12 @@ export const Menu = () => {
   const displayName = useStore(userDisplayNameStore);
   const userInitials = useStore(userInitialsStore);
   const isAuthenticated = useStore(isAuthenticatedStore);
-  const { isLoaded } = useClerkSync();
-  const { signIn, signOut, openProfile } = useAuthActions();
+
+  // No-op auth functions (Clerk removed)
+  const isLoaded = true;
+  const signIn = () => {};
+  const signOut = () => {};
+  const openProfile = () => {};
 
   const { filteredItems: filteredList, handleSearchChange } = useSearchFilter({
     items: list,

@@ -4,7 +4,6 @@ import { renderToReadableStream } from 'react-dom/server';
 import { renderHeadToString } from 'remix-island';
 import { Head } from './root';
 import { themeStore } from '~/lib/stores/theme';
-import { ClerkApp } from '~/lib/auth/ClerkProvider';
 
 export default async function handleRequest(
   request: Request,
@@ -16,9 +15,7 @@ export default async function handleRequest(
   // await initializeModelList({});
 
   const readable = await renderToReadableStream(
-    <ClerkApp>
-      <RemixServer context={remixContext} url={request.url} />
-    </ClerkApp>,
+    <RemixServer context={remixContext} url={request.url} />,
     {
       signal: request.signal,
       onError(error: unknown) {
