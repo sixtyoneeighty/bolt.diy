@@ -14,10 +14,11 @@ import { binDates } from './date-binning';
 import { useSearchFilter } from '~/lib/hooks/useSearchFilter';
 import { classNames } from '~/utils/classNames';
 import { useStore } from '@nanostores/react';
+import { useNavigate } from '@remix-run/react';
 
 import { userProfileStore, userDisplayNameStore, userInitialsStore, isAuthenticatedStore } from '~/lib/stores/user';
-
-// Clerk authentication removed - using no-op functions
+import { SignInModal } from '~/components/auth/SignInModal';
+import { chatStore } from '~/lib/stores/chat';
 
 const menuVariants = {
   closed: {
@@ -68,6 +69,7 @@ function CurrentDateTime() {
 }
 
 export const Menu = () => {
+  const navigate = useNavigate();
   const { duplicateCurrentChat, exportChat } = useChatHistory();
   const menuRef = useRef<HTMLDivElement>(null);
   const [list, setList] = useState<ChatHistoryItem[]>([]);
@@ -78,17 +80,22 @@ export const Menu = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
+  const { showChat } = useStore(chatStore);
+
+  // Keep local open state in sync with global showChat
+  useEffect(() => {
+    setOpen(showChat);
+  }, [showChat]);
+
   // Authentication state
   const userProfile = useStore(userProfileStore);
   const displayName = useStore(userDisplayNameStore);
   const userInitials = useStore(userInitialsStore);
   const isAuthenticated = useStore(isAuthenticatedStore);
 
-  // No-op auth functions (Clerk removed)
+  // Authentication modal state
+  const [showSignInModal, setShowSignInModal] = useState(false);
   const isLoaded = true;
-  const signIn = () => {};
-  const signOut = () => {};
-  const openProfile = () => {};
 
   const { filteredItems: filteredList, handleSearchChange } = useSearchFilter({
     items: list,
@@ -142,6 +149,33 @@ export const Menu = () => {
     [db],
   );
 
+  // Real authentication functions
+  const signIn = useCallback(() => {
+    setShowSignInModal(true);
+  }, []);
+
+  const signOut = useCallback(() => {
+    // Clear user stores
+    userProfileStore.set(null);
+
+    // Reload entries to show unauthenticated chats
+    loadEntries();
+    toast.success('Signed out successfully');
+  }, [loadEntries]);
+
+  const openProfile = useCallback(() => {
+    // For now, just show a toast - could open a profile modal later
+    toast.info('Profile management coming soon!');
+  }, []);
+
+  const handleSignInModalClose = useCallback(() => {
+    setShowSignInModal(false);
+  }, []);
+
+  const handleSignInSuccess = useCallback(() => {
+    loadEntries();
+  }, [loadEntries]);
+
   const deleteItem = useCallback(
     (event: React.UIEvent, item: ChatHistoryItem) => {
       event.preventDefault();
@@ -161,9 +195,9 @@ export const Menu = () => {
           loadEntries();
 
           if (chatId.get() === item.id) {
-            // hard page navigation to clear the stores
+            // use client-side navigation to clear current chat view
             console.log('Navigating away from deleted chat');
-            window.location.pathname = '/';
+            navigate('/');
           }
         })
         .catch((error) => {
@@ -177,7 +211,7 @@ export const Menu = () => {
           loadEntries();
         });
     },
-    [loadEntries, deleteChat],
+    [loadEntries, deleteChat, navigate],
   );
 
   const deleteSelectedItems = useCallback(
@@ -228,10 +262,10 @@ export const Menu = () => {
       // Navigate if needed
       if (shouldNavigate) {
         console.log('Navigating away from deleted chat');
-        window.location.pathname = '/';
+        navigate('/');
       }
     },
-    [deleteChat, loadEntries, db],
+    [deleteChat, loadEntries, db, navigate],
   );
 
   const closeDialog = () => {
@@ -320,11 +354,11 @@ export const Menu = () => {
       }
 
       if (event.pageX < enterThreshold) {
-        setOpen(true);
+        chatStore.setKey('showChat', true);
       }
 
       if (menuRef.current && event.clientX > menuRef.current.getBoundingClientRect().right + exitThreshold) {
-        setOpen(false);
+        chatStore.setKey('showChat', false);
       }
     }
 
@@ -342,7 +376,7 @@ export const Menu = () => {
 
   const handleSettingsClick = () => {
     setIsSettingsOpen(true);
-    setOpen(false);
+    chatStore.setKey('showChat', false);
   };
 
   const handleSettingsClose = () => {
@@ -411,13 +445,13 @@ export const Menu = () => {
         <div className="flex-1 flex flex-col h-full w-full overflow-hidden">
           <div className="p-4 space-y-3">
             <div className="flex gap-2">
-              <a
-                href="/"
+              <button
+                onClick={() => navigate('/')}
                 className="flex-1 flex gap-2 items-center bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg px-4 py-2 transition-colors"
               >
                 <span className="inline-block i-ph:plus-circle h-4 w-4" />
                 <span className="text-sm font-medium">Start new chat</span>
-              </a>
+              </button>
               <button
                 onClick={toggleSelectionMode}
                 className={classNames(
@@ -624,6 +658,7 @@ export const Menu = () => {
       </motion.div>
 
       <ControlPanel open={isSettingsOpen} onClose={handleSettingsClose} />
+      <SignInModal isOpen={showSignInModal} onClose={handleSignInModalClose} onSuccess={handleSignInSuccess} />
     </>
   );
 };

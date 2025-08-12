@@ -28,6 +28,7 @@ import type { ElementInfo } from '~/components/workbench/Inspector';
 import type { TextUIPart, FileUIPart, Attachment } from '@ai-sdk/ui-utils';
 import { useMCPStore } from '~/lib/stores/mcp';
 import type { LlmErrorAlertType } from '~/types/actions';
+import { useAuthGuard } from '~/components/auth/AuthGuard';
 
 const toastAnimation = cssTransition({
   enter: 'animated fadeInRight',
@@ -428,6 +429,19 @@ export const ChatImpl = memo(
 
       if (isLoading) {
         abort();
+        return;
+      }
+
+      // Check authentication before allowing message submission
+      const { isAuthenticated, isLoaded } = useAuthGuard();
+
+      if (!isLoaded) {
+        toast.error('Authentication is loading. Please wait.');
+        return;
+      }
+
+      if (!isAuthenticated) {
+        toast.error('Please sign in to send messages.');
         return;
       }
 

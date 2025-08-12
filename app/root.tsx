@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react';
-import type { LinksFunction } from '@remix-run/cloudflare';
+import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/cloudflare';
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react';
 import tailwindReset from '@unocss/reset/tailwind-compat.css?url';
 import { themeStore } from './lib/stores/theme';
@@ -9,6 +9,8 @@ import { useEffect } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { ClientOnly } from 'remix-utils/client-only';
+import { ClerkApp } from '@clerk/remix';
+import { rootAuthLoader } from '@clerk/remix/ssr.server';
 
 import reactToastifyStyles from 'react-toastify/dist/ReactToastify.css?url';
 import globalStyles from './styles/index.scss?url';
@@ -83,7 +85,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 import { logStore } from './lib/stores/logs';
 
-export default function App() {
+// Clerk loader function
+export async function loader(args: LoaderFunctionArgs) {
+  return rootAuthLoader(args, {
+    secretKey: args.context.cloudflare?.env?.CLERK_SECRET_KEY,
+    publishableKey: args.context.cloudflare?.env?.CLERK_PUBLISHABLE_KEY,
+  });
+}
+
+function App() {
   const theme = useStore(themeStore);
 
   useEffect(() => {
@@ -101,3 +111,7 @@ export default function App() {
     </Layout>
   );
 }
+
+export default ClerkApp(App, {
+  publishableKey: import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+});

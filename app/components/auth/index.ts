@@ -5,6 +5,7 @@ export { ProfileMenu, CompactProfileMenu } from './ProfileMenu';
 export { AuthGuard, withAuthGuard, useAuthGuard, ProtectedSection } from './AuthGuard';
 export { SessionExpiryWarning, SessionStatusIndicator } from './SessionExpiryWarning';
 export { SessionInitializer, withSessionInitializer } from './SessionInitializer';
+export { SignInModal } from './SignInModal';
 
 // Re-export auth utilities
 /* Note: Clerk utilities removed - authentication disabled */

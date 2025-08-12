@@ -72,6 +72,23 @@ const workbenchVariants = {
   },
 } satisfies Variants;
 
+const mobileWorkbenchVariants = {
+  closed: {
+    x: '100%',
+    transition: {
+      duration: 0.3,
+      ease: cubicEasingFn,
+    },
+  },
+  open: {
+    x: '0%',
+    transition: {
+      duration: 0.3,
+      ease: cubicEasingFn,
+    },
+  },
+} satisfies Variants;
+
 const FileModifiedDropdown = memo(
   ({
     fileHistory,
@@ -368,19 +385,22 @@ export const Workbench = memo(
         <motion.div
           initial="closed"
           animate={showWorkbench ? 'open' : 'closed'}
-          variants={workbenchVariants}
-          className="z-workbench"
+          variants={isSmallViewport ? mobileWorkbenchVariants : workbenchVariants}
+          className={classNames('z-workbench', {
+            'fixed inset-0 top-[calc(var(--header-height)+1.2rem)] bottom-6': isSmallViewport,
+          })}
         >
           <div
-            className={classNames(
-              'fixed top-[calc(var(--header-height)+1.2rem)] bottom-6 w-[var(--workbench-inner-width)] z-0 transition-[left,width] duration-200 bolt-ease-cubic-bezier',
-              {
-                'w-full': isSmallViewport,
-                'left-0': showWorkbench && isSmallViewport,
-                'left-[var(--workbench-left)]': showWorkbench,
-                'left-[100%]': !showWorkbench,
-              },
-            )}
+            className={classNames('z-0 transition-[left,width] duration-200 bolt-ease-cubic-bezier', {
+              // Mobile styles
+              'fixed inset-0 top-[calc(var(--header-height)+1.2rem)] bottom-6 w-full': isSmallViewport,
+
+              // Desktop styles
+              'fixed top-[calc(var(--header-height)+1.2rem)] bottom-6 w-[var(--workbench-inner-width)]':
+                !isSmallViewport,
+              'left-[var(--workbench-left)]': showWorkbench && !isSmallViewport,
+              'left-[100%]': !showWorkbench && !isSmallViewport,
+            })}
           >
             <div className="absolute inset-0 px-2 lg:px-4">
               <div className="h-full flex flex-col bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor shadow-sm rounded-lg overflow-hidden">

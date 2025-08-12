@@ -8,6 +8,10 @@ import { ChatDescription } from '~/lib/persistence/ChatDescription.client';
 export function Header() {
   const chat = useStore(chatStore);
 
+  const handleSidebarToggle = () => {
+    chatStore.setKey('showChat', !chat.showChat);
+  };
+
   return (
     <header
       className={classNames('flex items-center px-4 border-b h-[var(--header-height)]', {
@@ -16,7 +20,11 @@ export function Header() {
       })}
     >
       <div className="flex items-center gap-2 z-logo text-bolt-elements-textPrimary cursor-pointer">
-        <div className="i-ph:sidebar-simple-duotone text-xl" />
+        <div 
+          className="i-ph:sidebar-simple-duotone text-xl cursor-pointer hover:text-bolt-elements-textSecondary transition-colors" 
+          onClick={handleSidebarToggle}
+          title="Toggle sidebar"
+        />
         <a href="/" className="text-2xl font-semibold text-accent flex items-center">
           {/* <span className="i-bolt:logo-text?mask w-[46px] inline-block" /> */}
           <img src="/logo-light-styled.png" alt="logo" className="w-[90px] inline-block dark:hidden" />

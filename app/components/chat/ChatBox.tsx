@@ -17,6 +17,7 @@ import { ColorSchemeDialog } from '~/components/ui/ColorSchemeDialog';
 import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import { McpTools } from './MCPTools';
+import { useAuthGuard } from '~/components/auth/AuthGuard';
 
 interface ChatBoxProps {
   provider: any;
@@ -251,6 +252,18 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               disabled={props.input.length === 0 || props.enhancingPrompt}
               className={classNames('transition-all', props.enhancingPrompt ? 'opacity-100' : '')}
               onClick={() => {
+                const { isAuthenticated, isLoaded } = useAuthGuard();
+
+                if (!isLoaded) {
+                  toast.error('Authentication is loading. Please wait.');
+                  return;
+                }
+
+                if (!isAuthenticated) {
+                  toast.error('Please sign in to enhance prompts.');
+                  return;
+                }
+
                 props.enhancePrompt?.();
                 toast.success('Prompt enhanced!');
               }}

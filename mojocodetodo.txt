@@ -1,0 +1,21 @@
+﻿Mojocode todo list:
+
+
+Add in authentication via clerk - the documentation has been provided for proper set in remix, please use the clerk provided login pages - which are already included in the env as are the other appropriate information - for your reference - they are 
+CLERK_SIGN_IN_URL=https://relevant-burro-77.accounts.dev/sign-in
+CLERK_SIGN_UP_URL=https://relevant-burro-77.accounts.dev/sign-up
+
+
+MCP server setup:  Have context7, sequential thinking, and tavily setup to permanently in use in the project for all users. Their documentation has also been included.
+
+
+Model Selector - 
+Make the only models available to be selected to be 
+OpenAI - GPT-5 - using high reasoning and o4-mini using high reasoning (documentation is included) - both should be set to use max tokens
+Google - gemini-2.5-pro - documentation is included - use the vercel ai-sdk if needed, but can use openai and googles sdks if you believe it would work better.
+
+
+(would also like to explore the possibility of adding in connection to azure openai as a secondary) 
+
+
+Database setup - make sure that users projects are properly saved and will be retrieved on repeat logins -

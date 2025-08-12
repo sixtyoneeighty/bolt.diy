@@ -19,7 +19,7 @@ export const LoginForm = ({ onSuccess: _onSuccess, onCancel, redirectUrl = '/', 
 
       // Authentication disabled - no redirect needed
       const fullRedirectUrl = redirectUrl.startsWith('http') ? redirectUrl : `${window.location.origin}${redirectUrl}`;
-      window.location.href = `https://helpful-cicada-2.accounts.dev/sign-in?redirect_url=${encodeURIComponent(fullRedirectUrl)}`;
+      window.location.href = `https://relevant-burro-77.accounts.dev/sign-in?redirect_url=${encodeURIComponent(fullRedirectUrl)}`;
     } catch (error) {
       reportError(error as Error, { context: 'LoginForm handleSignIn' });
       setIsLoading(false);
@@ -58,7 +58,7 @@ export const LoginForm = ({ onSuccess: _onSuccess, onCancel, redirectUrl = '/', 
             <p className="text-sm text-bolt-elements-textSecondary">
               Don't have an account?{' '}
               <button
-                onClick={() => (window.location.href = 'https://helpful-cicada-2.accounts.dev/sign-up')}
+                onClick={() => (window.location.href = 'https://relevant-burro-77.accounts.dev/sign-up')}
                 className="text-red-600 hover:text-red-700 font-medium transition-colors"
               >
                 Sign up

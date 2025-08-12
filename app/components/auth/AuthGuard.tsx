@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useStore } from '@nanostores/react';
 import { userProfileStore } from '~/lib/stores/user';
 import { AuthErrorBoundary } from './AuthErrorBoundary';
+import { useAuth } from '@clerk/remix';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -48,15 +49,15 @@ export function withAuthGuard<P extends object>(
 
 // Hook for checking authentication status
 export function useAuthGuard(_requireAuth: boolean = true) {
+  const { isLoaded, isSignedIn } = useAuth();
   const user = useStore(userProfileStore);
 
-  // Authentication disabled - always return authenticated state
   return {
-    isLoaded: true,
-    isAuthenticated: true,
+    isLoaded,
+    isAuthenticated: isSignedIn,
     user,
-    canAccess: true,
-    isLoading: false,
+    canAccess: isSignedIn,
+    isLoading: !isLoaded,
   };
 }
 

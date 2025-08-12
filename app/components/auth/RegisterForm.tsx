@@ -17,7 +17,7 @@ export const RegisterForm = ({ onSuccess: _onSuccess, onCancel, redirectUrl = '/
 
     // Authentication disabled - no redirect needed
     const fullRedirectUrl = redirectUrl.startsWith('http') ? redirectUrl : `${window.location.origin}${redirectUrl}`;
-    window.location.href = `https://helpful-cicada-2.accounts.dev/sign-up?redirect_url=${encodeURIComponent(fullRedirectUrl)}`;
+    window.location.href = `https://relevant-burro-77.accounts.dev/sign-up?redirect_url=${encodeURIComponent(fullRedirectUrl)}`;
   };
 
   return (
@@ -52,7 +52,7 @@ export const RegisterForm = ({ onSuccess: _onSuccess, onCancel, redirectUrl = '/
             <p className="text-sm text-bolt-elements-textSecondary">
               Already have an account?{' '}
               <button
-                onClick={() => (window.location.href = 'https://helpful-cicada-2.accounts.dev/sign-in')}
+                onClick={() => (window.location.href = 'https://relevant-burro-77.accounts.dev/sign-in')}
                 className="text-red-600 hover:text-red-700 font-medium transition-colors"
               >
                 Sign in
